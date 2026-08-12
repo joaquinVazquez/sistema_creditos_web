@@ -1,13 +1,13 @@
 // src/components/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import KpiCard from './KpiCard';
-import CorteCajaModal from './CorteCajaModal'; // NUEVO: Importación del reporte
+import CorteCajaModal from './CorteCajaModal';
 import { obtenerMetricasDashboard } from '../api/dashboardService';
 
 export default function Dashboard({ onLogout }) {
     const [metricas, setMetricas] = useState({ capital: 0, ingresos: 0, clientes: 0 });
     const [cargando, setCargando] = useState(true);
-    const [mostrarCorte, setMostrarCorte] = useState(false); // NUEVO: Control de visibilidad del reporte
+    const [mostrarCorte, setMostrarCorte] = useState(false);
 
     useEffect(() => {
         const cargarDatos = async () => {
@@ -33,13 +33,13 @@ export default function Dashboard({ onLogout }) {
 
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col">
-            <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+            {/* CORRECCIÓN APLICADA: print:hidden en el header */}
+            <header className="print:hidden bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex justify-between items-center">
                 <div>
                     <h1 className="text-xl font-bold text-blue-800">FINAMI</h1>
                     <span className="text-xs text-slate-500">Panel de Control Operativo</span>
                 </div>
                 
-                {/* NUEVO: Contenedor de botones de acción */}
                 <div className="flex gap-3">
                     <button 
                         onClick={() => setMostrarCorte(true)}
@@ -56,7 +56,8 @@ export default function Dashboard({ onLogout }) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
+            {/* CORRECCIÓN APLICADA: print:hidden en el main */}
+            <main className="print:hidden flex-1 p-6 max-w-7xl mx-auto w-full">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <KpiCard 
                         titulo="Capital en Calle" 
@@ -83,7 +84,6 @@ export default function Dashboard({ onLogout }) {
                 </div>
             </main>
 
-            {/* NUEVO: Instancia del reporte financiero */}
             <CorteCajaModal 
                 isOpen={mostrarCorte} 
                 onClose={() => setMostrarCorte(false)} 
