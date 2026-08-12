@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { obtenerClientes, archivarCliente } from '../api/clienteService';
 import NuevoClienteModal from './NuevoClienteModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function TablaClientes() {
+    const navigate = useNavigate();
     const [clientes, setClientes] = useState([]);
     const [busqueda, setBusqueda] = useState('');
     const [cargando, setCargando] = useState(true);
@@ -121,7 +123,9 @@ export default function TablaClientes() {
                                     <td className="p-4 text-slate-600">{cliente.telefono || 'N/A'}</td>
                                     
                                     <td className="p-4 text-right flex justify-end gap-2">
-                                        <button className="text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 transition">
+                                        <button 
+                                            onClick={() => navigate(`/cliente/${cliente.rfc}`)}
+                                            className="text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 transition">
                                             Ver Perfil
                                         </button>
                                         
