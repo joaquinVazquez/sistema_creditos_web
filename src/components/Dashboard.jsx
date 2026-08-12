@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import KpiCard from './KpiCard';
 import CorteCajaModal from './CorteCajaModal';
+import TablaClientes from './TablaClientes';
 import { obtenerMetricasDashboard } from '../api/dashboardService';
 
 export default function Dashboard({ onLogout }) {
@@ -79,9 +80,8 @@ export default function Dashboard({ onLogout }) {
                     />
                 </div>
 
-                <div className="bg-white rounded-lg shadow-md border border-slate-200 p-6 min-h-[400px] flex items-center justify-center">
-                    <p className="text-slate-400 italic">Aquí irá el directorio de clientes (Siguiente fase)</p>
-                </div>
+                {/* INYECCIÓN DEL COMPONENTE */}
+                <TablaClientes />
             </main>
 
             <CorteCajaModal 
