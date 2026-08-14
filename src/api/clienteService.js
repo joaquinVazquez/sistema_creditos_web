@@ -31,3 +31,13 @@ export const archivarCliente = async (rfc) => {
         throw new Error(mensajeError);
     }
 };
+
+export const obtenerClientePorRfc = async (rfc) => {
+    try {
+        const response = await apiClient.get(`/api/v1/clientes/${rfc}`);
+        return response.data;
+    } catch (error) {
+        const mensaje = error.response?.data?.detail || "Error al obtener el expediente del cliente";
+        throw new Error(mensaje);
+    }
+}
