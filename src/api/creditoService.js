@@ -15,7 +15,16 @@ export const crearCredito = async (creditoData) => {
         const response = await apiClient.post('/api/v1/creditos/', creditoData);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.detail || "Error al registrar el crédito.");
+        let msg = "Error al registrar el crédito.";
+        if (error.response?.data?.detail) {
+            // Si FastAPI devuelve un arreglo (Error 422), extraemos qué campos fallaron
+            if (Array.isArray(error.response.data.detail)) {
+                msg = error.response.data.detail.map(e => `Falta o es incorrecto: ${e.loc[e.loc.length-1]}`).join(' | ');
+            } else {
+                msg = error.response.data.detail; // Errores normales (400, 404)
+            }
+        }
+        throw new Error(msg);
     }
 };
 

@@ -202,7 +202,7 @@ export default function PerfilCliente() {
             <NuevoCreditoModal 
                 isOpen={mostrarModalCredito} 
                 onClose={() => setMostrarModalCredito(false)} 
-                rfcCliente={rfc} 
+                clienteRfc={rfc} 
                 onCreditoCreado={cargarCreditos}
             />
 
