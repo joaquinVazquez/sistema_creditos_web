@@ -27,3 +27,12 @@ export const obtenerPagosPorCredito = async (idCredito) => {
         throw new Error(error.response?.data?.detail || "Error al cargar historial de pagos.");
     }
 };
+
+export const obtenerMetricasCredito = async (idCredito) => {
+    try {
+        const response = await apiClient.get(`/api/v1/creditos/${idCredito}/metricas`);
+        return response.data; // Retorna { cuota_semanal, semana_actual }
+    } catch (error) {
+        throw new Error("No se pudieron cargar las métricas del crédito.");
+    }
+};

@@ -12,3 +12,13 @@ export const registrarAbono = async (creditoId, montoAbono) => {
         throw new Error(error.response?.data?.detail || "Error transaccional al procesar el abono.");
     }
 };
+
+// NUEVA FUNCIÓN: Cancelar un pago erróneo
+export const revertirAbono = async (pagoId) => {
+    try {
+        const response = await apiClient.delete(`/api/v1/pagos/revertir/${pagoId}`);
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.detail || "Error al cancelar el abono.");
+    }
+};
