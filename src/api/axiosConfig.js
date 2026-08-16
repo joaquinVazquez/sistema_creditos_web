@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // 1. Configuración base
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'https://sistema-creditos-tw1k.onrender.com',
+    baseURL: 'https://sistema-creditos-tw1k.onrender.com',
     headers: {
         'Content-Type': 'application/json'
     }
