@@ -41,3 +41,13 @@ export const obtenerClientePorRfc = async (rfc) => {
         throw new Error(mensaje);
     }
 }
+
+export const actualizarCliente = async (rfcOriginal, clienteData) => {
+    try {
+        const response = await apiClient.put(`/api/v1/clientes/${rfcOriginal}`, clienteData);
+        return response.data;
+    } catch (error) {
+        const mensajeError = error.response?.data?.detail || "Error al actualizar el cliente";
+        throw new Error(mensajeError);
+    }
+};

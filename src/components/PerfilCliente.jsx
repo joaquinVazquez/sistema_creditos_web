@@ -5,6 +5,7 @@ import { obtenerClientePorRfc } from '../api/clienteService';
 import { obtenerHistorialCreditos } from '../api/creditoService';
 import NuevoCreditoModal from './NuevoCreditoModal';
 import ModalEstadoCuenta from './ModalEstadoCuenta';
+import NuevoClienteModal from './NuevoClienteModal'; // 1. IMPORTACIÓN AGREGADA
 
 export default function PerfilCliente() {
     const { rfc } = useParams();
@@ -14,6 +15,7 @@ export default function PerfilCliente() {
     const [cliente, setCliente] = useState(null);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState('');
+    const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false); // 2. ESTADO AGREGADO
 
     // Estados para los créditos
     const [creditos, setCreditos] = useState([]);
@@ -21,32 +23,44 @@ export default function PerfilCliente() {
     const [mostrarModalCredito, setMostrarModalCredito] = useState(false);
     const [creditoSeleccionado, setCreditoSeleccionado] = useState(null);
 
+    // 3. FUNCIÓN EXTRAÍDA DEL USEEFFECT PARA PODER REUTILIZARLA
+    const cargarDatosCliente = async () => {
+        try {
+            setCargando(true);
+            const datos = await obtenerClientePorRfc(rfc);
+            if (Array.isArray(datos)) {
+                setCliente({
+                    rfc: datos[0],
+                    nombre_completo: datos[1],
+                    telefono: datos[2] || 'N/A',
+                    direccion: datos[3] || 'Sin dirección registrada',
+                    activo: datos[4] // En caso de que tu array traiga el estado
+                });
+            } else {
+                setCliente(datos);
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setCargando(false);
+        }
+    };
+
     // useEffect 1: Carga los datos generales del cliente
     useEffect(() => {
-        const cargarDatosCliente = async () => {
-            try {
-                setCargando(true);
-                const datos = await obtenerClientePorRfc(rfc);
-                if (Array.isArray(datos)) {
-                    setCliente({
-                        rfc: datos[0],
-                        nombre_completo: datos[1],
-                        telefono: datos[2] || 'N/A',
-                        direccion: datos[3] || 'Sin dirección registrada'
-                    });
-                } else {
-                    setCliente(datos);
-                }
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setCargando(false);
-            }
-        };
         cargarDatosCliente();
     }, [rfc]);
 
-    // useEffect 2: Carga el historial de créditos (AHORA ESTÁ AFUERA DEL OTRO)
+    // 4. NUEVA FUNCIÓN PARA MANEJAR LA ACTUALIZACIÓN
+    const handleClienteActualizado = (nuevoRfc) => {
+        if (nuevoRfc && nuevoRfc !== rfc) {
+            navigate(`/cliente/${nuevoRfc}`); // Si cambió el RFC, viaja a la nueva URL
+        } else {
+            cargarDatosCliente(); // Si es el mismo RFC, refresca los datos
+        }
+    };
+
+    // useEffect 2: Carga el historial de créditos
     const cargarCreditos = async () => {
         try {
             setCargandoCreditos(true);
@@ -106,11 +120,21 @@ export default function PerfilCliente() {
                     <h2 className="text-white text-lg font-bold flex items-center gap-2">
                         <span>👤</span> Expediente del Cliente
                     </h2>
-                    {cliente?.activo === false && (
-                        <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">
-                            Archivado
-                        </span>
-                    )}
+                    
+                    {/* 5. SECCIÓN MODIFICADA: BOTÓN DE EDITAR Y ETIQUETA AGRUPADOS */}
+                    <div className="flex gap-2 items-center">
+                        <button 
+                            onClick={() => setMostrarModalEdicion(true)}
+                            className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded font-medium transition flex items-center gap-1"
+                        >
+                            <span>✏️</span> Editar Datos
+                        </button>
+                        {cliente?.activo === false && (
+                            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">
+                                Archivado
+                            </span>
+                        )}
+                    </div>
                 </div>
                 
                 <div className="p-6">
@@ -198,7 +222,16 @@ export default function PerfilCliente() {
                 </div>
             </div>
 
-            {/* INSTANCIA DEL MODAL */}
+            {/* INSTANCIAS DE MODALES */}
+            
+            {/* 6. NUEVO MODAL DE EDICIÓN AGREGADO */}
+            <NuevoClienteModal 
+                isOpen={mostrarModalEdicion} 
+                onClose={() => setMostrarModalEdicion(false)} 
+                onClienteCreado={handleClienteActualizado}
+                clienteAEditar={cliente}
+            />
+
             <NuevoCreditoModal 
                 isOpen={mostrarModalCredito} 
                 onClose={() => setMostrarModalCredito(false)} 

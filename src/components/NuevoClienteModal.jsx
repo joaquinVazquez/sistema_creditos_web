@@ -1,8 +1,7 @@
-// src/components/NuevoClienteModal.jsx
-import { useState } from 'react';
-import { crearCliente } from '../api/clienteService';
+import { useState, useEffect } from 'react';
+import { crearCliente, actualizarCliente } from '../api/clienteService';
 
-export default function NuevoClienteModal({ isOpen, onClose, onClienteCreado }) {
+export default function NuevoClienteModal({ isOpen, onClose, onClienteCreado, clienteAEditar = null }) {
     const [formData, setFormData] = useState({
         rfc: '',
         nombre_completo: '',
@@ -11,6 +10,22 @@ export default function NuevoClienteModal({ isOpen, onClose, onClienteCreado }) 
     });
     const [cargando, setCargando] = useState(false);
     const [error, setError] = useState('');
+
+    // Si pasamos un cliente, llena el formulario. Si no, lo limpia para un nuevo registro.
+    useEffect(() => {
+        if (isOpen && clienteAEditar) {
+            setFormData({
+                rfc: clienteAEditar.rfc || '',
+                nombre_completo: clienteAEditar.nombre_completo || '',
+                telefono: clienteAEditar.telefono || '',
+                direccion: clienteAEditar.direccion || ''
+            });
+            setError('');
+        } else if (isOpen) {
+            setFormData({ rfc: '', nombre_completo: '', telefono: '', direccion: '' });
+            setError('');
+        }
+    }, [isOpen, clienteAEditar]);
 
     if (!isOpen) return null;
 
@@ -24,13 +39,20 @@ export default function NuevoClienteModal({ isOpen, onClose, onClienteCreado }) 
         setError('');
 
         try {
-            await crearCliente({
+            const datosFormateados = {
                 ...formData,
-                // Aseguramos que el RFC vaya en mayúsculas por estándar de base de datos
-                rfc: formData.rfc.toUpperCase() 
-            });
-            onClienteCreado(); // Refresca la tabla
-            onClose(); // Cierra el modal
+                rfc: formData.rfc.toUpperCase()
+            };
+
+            if (clienteAEditar) {
+                await actualizarCliente(clienteAEditar.rfc, datosFormateados);
+                onClienteCreado(datosFormateados.rfc); // Pasamos el RFC por si cambió
+            } else {
+                await crearCliente(datosFormateados);
+                onClienteCreado(datosFormateados.rfc);
+            }
+            
+            onClose();
         } catch (err) {
             setError(err.message);
         } finally {
@@ -38,11 +60,15 @@ export default function NuevoClienteModal({ isOpen, onClose, onClienteCreado }) 
         }
     };
 
+    const esEdicion = !!clienteAEditar;
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
                 <div className="bg-slate-800 px-6 py-4 flex justify-between items-center">
-                    <h2 className="text-white text-lg font-bold">Registrar Nuevo Cliente</h2>
+                    <h2 className="text-white text-lg font-bold">
+                        {esEdicion ? 'Editar Cliente' : 'Registrar Nuevo Cliente'}
+                    </h2>
                     <button onClick={onClose} className="text-slate-300 hover:text-white font-bold">✕</button>
                 </div>
                 
@@ -90,7 +116,7 @@ export default function NuevoClienteModal({ isOpen, onClose, onClienteCreado }) 
                             Cancelar
                         </button>
                         <button type="submit" disabled={cargando} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50">
-                            {cargando ? 'Guardando...' : 'Registrar Cliente'}
+                            {cargando ? 'Guardando...' : (esEdicion ? 'Actualizar Cliente' : 'Registrar Cliente')}
                         </button>
                     </div>
                 </form>
