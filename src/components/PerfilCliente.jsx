@@ -241,6 +241,7 @@ export default function PerfilCliente() {
 
             <ModalEstadoCuenta 
                 credito={creditoSeleccionado}
+                cliente={cliente}
                 onClose={() => setCreditoSeleccionado(null)}
                 onPagoRealizado={cargarCreditos}
             />

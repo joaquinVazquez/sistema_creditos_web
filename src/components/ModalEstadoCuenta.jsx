@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { obtenerPagosPorCredito, obtenerMetricasCredito } from '../api/creditoService';
 import { registrarAbono, revertirAbono } from '../api/pagoService';
 
-export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado }) {
+export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRealizado }) {
     const [pagos, setPagos] = useState([]);
     const [metrica, setMetrica] = useState(null);
     const [cargandoPagos, setCargandoPagos] = useState(false);
@@ -68,6 +68,7 @@ export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado })
             setUltimoTicket({
                 fecha: new Date().toLocaleString(),
                 creditoId: credito.id,
+                clienteNombre: cliente?.nombre_completo || 'Cliente General',
                 saldoAnterior: saldoAnterior,
                 montoAbonado: montoNumerico,
                 saldoNuevo: saldoAnterior - montoNumerico
@@ -100,24 +101,37 @@ export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado })
 
     const formatoMoneda = (cantidad) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cantidad);
 
-    // Función exclusiva para impresoras térmicas de 80mm
-    const imprimirTicketTermico = () => {
-        if (!ultimoTicket) return;
+    // NUEVO: Función para formatear los datos del historial a un formato de ticket
+    const handleReimprimir = (pago) => {
+        const ticketReimpresion = {
+            esReimpresion: true,
+            folio: pago.id,
+            fecha: new Date(pago.fecha).toLocaleString(),
+            creditoId: credito.id,
+            clienteNombre: cliente?.nombre_completo || 'Cliente General',
+            montoAbonado: pago.monto,
+            cajero: pago.username,
+            saldoActualRef: credito.saldo_actual
+        };
+        imprimirTicketTermico(ticketReimpresion);
+    };
 
-        // Abrimos una ventana temporal invisible
+    // MODIFICADO: Ahora acepta un parámetro (datos personalizados o el estado del ultimo ticket)
+    const imprimirTicketTermico = (ticketPersonalizado = null) => {
+        const data = (ticketPersonalizado && ticketPersonalizado.esReimpresion) ? ticketPersonalizado : ultimoTicket;
+        if (!data) return;
+
         const ticketWindow = window.open('', '_blank', 'width=400,height=600');
         
-        // Inyectamos HTML diseñado estrictamente para rollos de 80mm
         ticketWindow.document.write(`
             <html>
             <head>
                 <title>Ticket de Abono</title>
                 <style>
-                    /* Reset de márgenes para miniprinters */
                     @page { margin: 0; }
                     body { 
                         font-family: 'Courier New', Courier, monospace;
-                        width: 72mm; /* Dejamos 8mm de margen de seguridad para el rodillo */
+                        width: 72mm; 
                         margin: 0 auto; 
                         padding: 5mm; 
                         color: #000;
@@ -128,38 +142,53 @@ export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado })
                     .font-bold { font-weight: bold; }
                     .divider { border-top: 1px dashed #000; margin: 10px 0; }
                     .header { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+                    .client-box { font-size: 13px; margin-bottom: 5px; text-transform: uppercase; }
                 </style>
             </head>
             <body>
                 <div class="text-center">
-                    <div class="header">COMPROBANTE DE PAGO</div>
-                    <div style="font-size: 12px;">Fecha: ${ultimoTicket.fecha}</div>
+                    <div class="header">${data.esReimpresion ? '*** REIMPRESIÓN ***' : 'COMPROBANTE DE PAGO'}</div>
+                    <div style="font-size: 12px;">Fecha: ${data.fecha}</div>
+                    ${data.folio ? `<div style="font-size: 12px;">Folio Pago: #${data.folio}</div>` : ''}
+                    ${data.cajero ? `<div style="font-size: 12px;">Cajero: ${data.cajero}</div>` : ''}
                 </div>
                 
                 <div class="divider"></div>
                 
+                <div class="client-box">
+                    <strong>Cliente:</strong><br/>
+                    ${data.clienteNombre}
+                </div>
+
                 <div class="flex-between">
                     <span>Crédito:</span>
-                    <span>#${ultimoTicket.creditoId}</span>
+                    <span>#${data.creditoId}</span>
                 </div>
+                
+                ${data.saldoAnterior !== undefined ? `
                 <div class="flex-between">
                     <span>Saldo Ant:</span>
-                    <span>${formatoMoneda(ultimoTicket.saldoAnterior)}</span>
-                </div>
+                    <span>${formatoMoneda(data.saldoAnterior)}</span>
+                </div>` : ''}
                 
                 <div class="divider"></div>
                 
                 <div class="flex-between font-bold" style="font-size: 16px;">
                     <span>ABONO:</span>
-                    <span>${formatoMoneda(ultimoTicket.montoAbonado)}</span>
+                    <span>${formatoMoneda(data.montoAbonado)}</span>
                 </div>
                 
                 <div class="divider"></div>
                 
+                ${data.saldoNuevo !== undefined ? `
                 <div class="flex-between font-bold">
                     <span>Nuevo Saldo:</span>
-                    <span>${formatoMoneda(ultimoTicket.saldoNuevo)}</span>
-                </div>
+                    <span>${formatoMoneda(data.saldoNuevo)}</span>
+                </div>` : `
+                <div class="flex-between font-bold">
+                    <span>Saldo Actual(Hoy):</span>
+                    <span>${formatoMoneda(data.saldoActualRef)}</span>
+                </div>`}
                 
                 <br/>
                 <div class="text-center" style="font-size: 12px;">
@@ -220,7 +249,7 @@ export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado })
                                 </div>
                                 <div className="pt-2 flex gap-2">
                                     <button 
-                                        onClick={imprimirTicketTermico} 
+                                        onClick={() => imprimirTicketTermico()} 
                                         className="flex-1 bg-slate-800 text-white text-xs py-2 rounded font-medium hover:bg-slate-700 transition"
                                     >
                                         Imprimir Ticket
@@ -237,7 +266,7 @@ export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado })
                             /* FORMULARIO DE COBRO NORMAL */
                             <div>
                                 <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                                    <span>💵</span> Registrar Abono
+                                    <span>💸</span> Registrar Abono
                                 </h3>
 
                                 {metrica && (
@@ -298,7 +327,7 @@ export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado })
                                     <th className="p-3 border-b">Fecha</th>
                                     <th className="p-3 border-b">Cajero</th>
                                     <th className="p-3 border-b text-right">Abono</th>
-                                    <th className="p-3 border-b text-center">Acción</th>
+                                    <th className="p-3 border-b text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="text-sm divide-y divide-slate-100">
@@ -314,13 +343,22 @@ export default function ModalEstadoCuenta({ credito, onClose, onPagoRealizado })
                                             <td className="p-3 text-slate-600">{pago.username}</td>
                                             <td className="p-3 font-bold text-green-600 text-right">+{formatoMoneda(pago.monto)}</td>
                                             <td className="p-3 text-center">
-                                                <button 
-                                                    onClick={() => handleRevertir(pago.id)}
-                                                    className="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-1 bg-red-50 rounded hover:bg-red-100 transition"
-                                                    title="Cancelar este abono"
-                                                >
-                                                    Cancelar
-                                                </button>
+                                                <div className="flex justify-center gap-2">
+                                                    <button 
+                                                        onClick={() => handleReimprimir(pago)}
+                                                        className="text-blue-500 hover:text-blue-700 text-xs font-medium px-2 py-1 bg-blue-50 rounded hover:bg-blue-100 transition"
+                                                        title="Reimprimir Ticket"
+                                                    >
+                                                        🖨️
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleRevertir(pago.id)}
+                                                        className="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-1 bg-red-50 rounded hover:bg-red-100 transition"
+                                                        title="Cancelar este abono"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
