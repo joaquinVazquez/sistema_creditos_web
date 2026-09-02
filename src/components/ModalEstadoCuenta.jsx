@@ -64,7 +64,7 @@ export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRea
         try {
             await registrarAbono(credito.id, montoNumerico);
             
-            // Construimos el ticket para el operador
+            // Construimos el ticket para el operador (este usa la hora local de tu computadora)
             setUltimoTicket({
                 fecha: new Date().toLocaleString(),
                 creditoId: credito.id,
@@ -83,7 +83,6 @@ export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRea
         }
     };
 
-    // UX Segura: Confirmación antes de revertir
     const handleRevertir = async (pagoId) => {
         const confirmar = window.confirm("¿Seguro que deseas cancelar este abono? El dinero se regresará al saldo del cliente.");
         if (!confirmar) return;
@@ -93,7 +92,7 @@ export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRea
             await revertirAbono(pagoId);
             cargarDatosIniciales();
             onPagoRealizado();
-            setUltimoTicket(null); // Ocultar ticket si existía
+            setUltimoTicket(null); 
         } catch (err) {
             setError(err.message);
         }
@@ -101,12 +100,19 @@ export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRea
 
     const formatoMoneda = (cantidad) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cantidad);
 
-    // NUEVO: Función para formatear los datos del historial a un formato de ticket
+    // FUNCIÓN DE CORRECCIÓN UTC
+    const formatearFechaHora = (fechaString) => {
+        if (!fechaString) return 'N/A';
+        const fecha = new Date(fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`);
+        return fecha.toLocaleString();
+    };
+
+    // FUNCIÓN QUE ARMA LA REIMPRESIÓN (Ahora usa formatearFechaHora)
     const handleReimprimir = (pago) => {
         const ticketReimpresion = {
             esReimpresion: true,
             folio: pago.id,
-            fecha: new Date(pago.fecha).toLocaleString(),
+            fecha: formatearFechaHora(pago.fecha), // <-- Corrección aplicada aquí
             creditoId: credito.id,
             clienteNombre: cliente?.nombre_completo || 'Cliente General',
             montoAbonado: pago.monto,
@@ -116,7 +122,6 @@ export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRea
         imprimirTicketTermico(ticketReimpresion);
     };
 
-    // MODIFICADO: Ahora acepta un parámetro (datos personalizados o el estado del ultimo ticket)
     const imprimirTicketTermico = (ticketPersonalizado = null) => {
         const data = (ticketPersonalizado && ticketPersonalizado.esReimpresion) ? ticketPersonalizado : ultimoTicket;
         if (!data) return;
@@ -128,7 +133,7 @@ export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRea
             <head>
                 <title>Ticket de Abono</title>
                 <style>
-                    @page { margin: 0; }
+                    @page { margin: 0; size: 80mm 200mm; }
                     body { 
                         font-family: 'Courier New', Courier, monospace;
                         width: 72mm; 
@@ -339,7 +344,7 @@ export default function ModalEstadoCuenta({ credito, cliente, onClose, onPagoRea
                                     pagos.map((pago) => (
                                         <tr key={pago.id} className="hover:bg-slate-50">
                                             <td className="p-3 font-mono text-slate-500 text-xs">#{pago.id}</td>
-                                            <td className="p-3 text-slate-700">{new Date(pago.fecha).toLocaleString()}</td>
+                                            <td className="p-3 text-slate-700">{formatearFechaHora(pago.fecha)}</td>
                                             <td className="p-3 text-slate-600">{pago.username}</td>
                                             <td className="p-3 font-bold text-green-600 text-right">+{formatoMoneda(pago.monto)}</td>
                                             <td className="p-3 text-center">

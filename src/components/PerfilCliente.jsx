@@ -82,6 +82,14 @@ export default function PerfilCliente() {
         return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cantidad);
     };
 
+    //Función para renderizar dinero (MXN)
+    const formatearFecha = (fechaString) => {
+        if (!fechaString) return 'N/A';
+        // Agregamos 'Z' al final para forzar a que JS lo interprete como UTC si no lo trae
+        const fecha = new Date(fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`);
+        return fecha.toLocaleDateString(); 
+    };
+
     if (cargando) {
         return (
             <div className="p-6 max-w-7xl mx-auto flex justify-center items-center h-64">
@@ -195,7 +203,7 @@ export default function PerfilCliente() {
                                 creditos.map((cred) => (
                                     <tr key={cred.id} className="hover:bg-slate-50 transition">
                                         <td className="p-4 text-slate-500 font-mono">#{cred.id}</td>
-                                        <td className="p-4 text-slate-700">{new Date(cred.fecha_inicio).toLocaleDateString()}</td>
+                                        <td className="p-4 text-slate-700">{formatearFecha(cred.fecha_inicio)}</td>
                                         <td className="p-4 font-medium text-slate-800 text-right">{formatoMoneda(cred.monto_original)}</td>
                                         <td className="p-4 text-slate-600 text-center">{cred.plazos_semanas} sem</td>
                                         <td className="p-4 font-bold text-blue-600 text-right">{formatoMoneda(cred.saldo_actual)}</td>
