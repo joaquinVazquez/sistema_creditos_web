@@ -1,9 +1,7 @@
-// src/api/authService.js
 import apiClient from './axiosConfig';
 
 export const loginUsuario = async (username, password) => {
     try {
-        // FastAPI exige formato "x-www-form-urlencoded" para el login
         const params = new URLSearchParams();
         params.append('username', username);
         params.append('password', password);
@@ -14,12 +12,8 @@ export const loginUsuario = async (username, password) => {
             }
         });
         
-        if (response.data && response.data.access_token) {
-            // Guardamos el token en la memoria del navegador
-            localStorage.setItem('finami_token', response.data.access_token);
-            return true;
-        }
-        return false;
+        // Devolvemos toda la data (token + datos del usuario) al componente Login
+        return response.data; 
     } catch (error) {
         console.error("Error en autenticación:", error);
         throw error;
@@ -27,5 +21,6 @@ export const loginUsuario = async (username, password) => {
 };
 
 export const logoutUsuario = () => {
-    localStorage.removeItem('finami_token');
+    // AuthContext ya limpia el localStorage. 
+    // Esta función queda lista por si en el futuro necesitas hacer una petición de cierre al backend.
 };

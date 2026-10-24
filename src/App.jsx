@@ -1,42 +1,34 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useContext } from 'react';
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import PerfilCliente from './components/PerfilCliente';
 import { logoutUsuario } from './api/authService';
 
-export default function App() {
-  const [autenticado, setAutenticado] = useState(false);
-  const [cargando, setCargando] = useState(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('finami_token');
-    if (token) {
-      setAutenticado(true);
-    }
-    setCargando(false);
-  }, []);
+// Extraemos las rutas a un componente interno para poder usar useContext
+function RutasPrincipales() {
+  const { usuario, cerrarSesion } = useContext(AuthContext);
 
   const manejarLogout = () => {
-    logoutUsuario();
-    setAutenticado(false);
+    logoutUsuario(); // Mantiene tu lógica original de la API
+    cerrarSesion();  // Limpia el estado global del contexto
   };
 
-  if (cargando) {
-    return <div className="flex h-screen items-center justify-center text-slate-500">Cargando sistema...</div>;
-  }
+  // Convertimos la existencia del usuario a un booleano (true/false)
+  const autenticado = !!usuario;
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* RUTA DE LOGIN: Si ya está autenticado, lo manda directo al Dashboard */}
+        {/* RUTA DE LOGIN */}
         <Route 
           path="/login" 
           element={
             autenticado ? 
             <Navigate to="/" replace /> : 
-            <Login onLoginSuccess={() => setAutenticado(true)} />
+            <Login /> 
           } 
         />
 
@@ -64,5 +56,14 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+// Componente principal que inyecta el estado global
+export default function App() {
+  return (
+    <AuthProvider>
+      <RutasPrincipales />
+    </AuthProvider>
   );
 }

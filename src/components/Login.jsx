@@ -1,22 +1,26 @@
-// src/components/Login.jsx
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { loginUsuario } from '../api/authService';
+import { AuthContext } from '../context/AuthContext';
 
-export default function Login({ onLoginSuccess }) {
+export default function Login() {
+    const { iniciarSesion } = useContext(AuthContext);
+    
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Evita que la página se recargue
+        e.preventDefault();
         setError('');
         setCargando(true);
 
         try {
-            const exito = await loginUsuario(username, password);
-            if (exito) {
-                onLoginSuccess(); // Avisa a la aplicación principal que ya entramos
+            const data = await loginUsuario(username, password);
+            
+            // Si FastAPI devuelve el token y el diccionario 'usuario' que configuramos
+            if (data && data.access_token) {
+                iniciarSesion(data.access_token, data.usuario);
             }
         } catch (err) {
             setError('Credenciales incorrectas o servidor inactivo.');
