@@ -51,3 +51,13 @@ export const actualizarCliente = async (rfcOriginal, clienteData) => {
         throw new Error(mensajeError);
     }
 };
+
+export const desarchivarCliente = async (rfc) => {
+    try {
+        await apiClient.patch(`/api/v1/clientes/${rfc}/desarchivar`);
+        return true;
+    } catch (error) {
+        const mensajeError = error.response?.data?.detail || "Error al desarchivar el cliente";
+        throw new Error(mensajeError);
+    }
+};

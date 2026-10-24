@@ -1,11 +1,11 @@
 // src/components/PerfilCliente.jsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { obtenerClientePorRfc } from '../api/clienteService';
+import { obtenerClientePorRfc, desarchivarCliente } from '../api/clienteService';
 import { obtenerHistorialCreditos } from '../api/creditoService';
 import NuevoCreditoModal from './NuevoCreditoModal';
 import ModalEstadoCuenta from './ModalEstadoCuenta';
-import NuevoClienteModal from './NuevoClienteModal'; // 1. IMPORTACIÓN AGREGADA
+import NuevoClienteModal from './NuevoClienteModal'; 
 
 export default function PerfilCliente() {
     const { rfc } = useParams();
@@ -15,7 +15,7 @@ export default function PerfilCliente() {
     const [cliente, setCliente] = useState(null);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState('');
-    const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false); // 2. ESTADO AGREGADO
+    const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false); 
 
     // Estados para los créditos
     const [creditos, setCreditos] = useState([]);
@@ -23,7 +23,6 @@ export default function PerfilCliente() {
     const [mostrarModalCredito, setMostrarModalCredito] = useState(false);
     const [creditoSeleccionado, setCreditoSeleccionado] = useState(null);
 
-    // 3. FUNCIÓN EXTRAÍDA DEL USEEFFECT PARA PODER REUTILIZARLA
     const cargarDatosCliente = async () => {
         try {
             setCargando(true);
@@ -34,7 +33,7 @@ export default function PerfilCliente() {
                     nombre_completo: datos[1],
                     telefono: datos[2] || 'N/A',
                     direccion: datos[3] || 'Sin dirección registrada',
-                    activo: datos[4] // En caso de que tu array traiga el estado
+                    activo: datos[4] 
                 });
             } else {
                 setCliente(datos);
@@ -46,21 +45,18 @@ export default function PerfilCliente() {
         }
     };
 
-    // useEffect 1: Carga los datos generales del cliente
     useEffect(() => {
         cargarDatosCliente();
     }, [rfc]);
 
-    // 4. NUEVA FUNCIÓN PARA MANEJAR LA ACTUALIZACIÓN
     const handleClienteActualizado = (nuevoRfc) => {
         if (nuevoRfc && nuevoRfc !== rfc) {
-            navigate(`/cliente/${nuevoRfc}`); // Si cambió el RFC, viaja a la nueva URL
+            navigate(`/cliente/${nuevoRfc}`); 
         } else {
-            cargarDatosCliente(); // Si es el mismo RFC, refresca los datos
+            cargarDatosCliente(); 
         }
     };
 
-    // useEffect 2: Carga el historial de créditos
     const cargarCreditos = async () => {
         try {
             setCargandoCreditos(true);
@@ -77,17 +73,28 @@ export default function PerfilCliente() {
         cargarCreditos();
     }, [rfc]);
 
-    // Función de utilidad para renderizar dinero (MXN)
     const formatoMoneda = (cantidad) => {
         return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cantidad);
     };
 
-    //Función para renderizar dinero (MXN)
+    // Función para corregir desfase de zona horaria
     const formatearFecha = (fechaString) => {
         if (!fechaString) return 'N/A';
-        // Agregamos 'Z' al final para forzar a que JS lo interprete como UTC si no lo trae
         const fecha = new Date(fechaString.endsWith('Z') ? fechaString : `${fechaString}Z`);
         return fecha.toLocaleDateString(); 
+    };
+
+    // Función para desarchivar cliente
+    const handleReactivar = async () => {
+        const confirmar = window.confirm("¿Seguro que deseas reactivar este expediente?");
+        if (!confirmar) return;
+
+        try {
+            await desarchivarCliente(cliente.rfc);
+            cargarDatosCliente(); 
+        } catch (err) {
+            alert(err.message);
+        }
     };
 
     if (cargando) {
@@ -114,7 +121,6 @@ export default function PerfilCliente() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
-            {/* Barra de Navegación Superior */}
             <button 
                 onClick={() => navigate('/')} 
                 className="flex items-center text-slate-500 hover:text-blue-600 font-medium transition"
@@ -122,14 +128,12 @@ export default function PerfilCliente() {
                 <span className="mr-2">←</span> Volver al Panel Principal
             </button>
             
-            {/* TARJETA 1: Información General del Cliente */}
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                 <div className="bg-slate-800 px-6 py-4 flex justify-between items-center">
                     <h2 className="text-white text-lg font-bold flex items-center gap-2">
                         <span>👤</span> Expediente del Cliente
                     </h2>
                     
-                    {/* 5. SECCIÓN MODIFICADA: BOTÓN DE EDITAR Y ETIQUETA AGRUPADOS */}
                     <div className="flex gap-2 items-center">
                         <button 
                             onClick={() => setMostrarModalEdicion(true)}
@@ -137,10 +141,16 @@ export default function PerfilCliente() {
                         >
                             <span>✏️</span> Editar Datos
                         </button>
+                        
+                        {/* ESTE ES EL BOTÓN QUE FALTABA CONECTAR */}
                         {cliente?.activo === false && (
-                            <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">
-                                Archivado
-                            </span>
+                            <button 
+                                onClick={handleReactivar}
+                                className="bg-orange-500 hover:bg-green-600 text-white text-xs px-2 py-1.5 rounded font-bold uppercase tracking-wider transition cursor-pointer"
+                                title="Clic para reactivar el expediente"
+                            >
+                                Archivado (Reactivar)
+                            </button>
                         )}
                     </div>
                 </div>
@@ -167,7 +177,6 @@ export default function PerfilCliente() {
                 </div>
             </div>
 
-            {/* TARJETA 2: Módulo de Créditos (CON TABLA REAL) */}
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -230,9 +239,6 @@ export default function PerfilCliente() {
                 </div>
             </div>
 
-            {/* INSTANCIAS DE MODALES */}
-            
-            {/* 6. NUEVO MODAL DE EDICIÓN AGREGADO */}
             <NuevoClienteModal 
                 isOpen={mostrarModalEdicion} 
                 onClose={() => setMostrarModalEdicion(false)} 
