@@ -1,11 +1,16 @@
 // src/components/Dashboard.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import KpiCard from './KpiCard';
 import CorteCajaModal from './CorteCajaModal';
 import TablaClientes from './TablaClientes';
 import { obtenerMetricasDashboard } from '../api/dashboardService';
 
 export default function Dashboard({ onLogout }) {
+    // 1. Extraemos al usuario del contexto global para saber su rol
+    const { usuario } = useContext(AuthContext);
+    
     const [metricas, setMetricas] = useState({ capital: 0, ingresos: 0, clientes: 0 });
     const [cargando, setCargando] = useState(true);
     const [mostrarCorte, setMostrarCorte] = useState(false);
@@ -42,6 +47,16 @@ export default function Dashboard({ onLogout }) {
                 </div>
                 
                 <div className="flex gap-3">
+                    {/* Renderizado Condicional: Solo lo verá el Administrador (rol 1) */}
+                    {usuario?.rol_id === 1 && (
+                        <Link 
+                            to="/usuarios" 
+                            className="bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-purple-700 transition shadow-sm flex items-center"
+                        >
+                            ⚙️ Personal
+                        </Link>
+                    )}
+
                     <button 
                         onClick={() => setMostrarCorte(true)}
                         className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition shadow-sm"

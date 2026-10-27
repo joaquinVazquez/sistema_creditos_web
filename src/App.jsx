@@ -5,19 +5,20 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import PerfilCliente from './components/PerfilCliente';
+import PanelUsuarios from './components/PanelUsuarios'; // <-- NUEVA IMPORTACIÓN
 import { logoutUsuario } from './api/authService';
 
-// Extraemos las rutas a un componente interno para poder usar useContext
 function RutasPrincipales() {
   const { usuario, cerrarSesion } = useContext(AuthContext);
 
   const manejarLogout = () => {
-    logoutUsuario(); // Mantiene tu lógica original de la API
-    cerrarSesion();  // Limpia el estado global del contexto
+    logoutUsuario();
+    cerrarSesion();
   };
 
-  // Convertimos la existencia del usuario a un booleano (true/false)
   const autenticado = !!usuario;
+  // Comprobamos si es administrador de forma segura
+  const esAdmin = usuario?.rol_id === 1;
 
   return (
     <BrowserRouter>
@@ -42,13 +43,25 @@ function RutasPrincipales() {
           } 
         />
 
-        {/* RUTA PROTEGIDA: Expediente individual del cliente (RFC dinámico) */}
+        {/* RUTA PROTEGIDA: Expediente individual del cliente */}
         <Route 
           path="/cliente/:rfc" 
           element={
             autenticado ? 
             <PerfilCliente /> : 
             <Navigate to="/login" replace />
+          } 
+        />
+
+        {/* NUEVA RUTA PROTEGIDA RBAC: Panel de Usuarios (Solo Admin) */}
+        <Route 
+          path="/usuarios" 
+          element={
+            autenticado ? (
+              esAdmin ? <PanelUsuarios /> : <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
           } 
         />
 
@@ -59,7 +72,6 @@ function RutasPrincipales() {
   );
 }
 
-// Componente principal que inyecta el estado global
 export default function App() {
   return (
     <AuthProvider>
